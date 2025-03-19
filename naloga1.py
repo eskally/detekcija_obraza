@@ -1,24 +1,31 @@
 import cv2 as cv
 import numpy as np
+import time
 
 def zmanjsaj_sliko(slika, sirina, visina):
     '''Zmanjšaj sliko na velikost sirina x visina.'''
     return cv.resize(slika, (sirina, visina), interpolation=cv.INTER_AREA)  
 
-def obdelaj_sliko_s_skatlami(slika, sirina_skatle, visina_skatle, barva_koze) -> list:
+def obdelaj_sliko_s_skatlami(slika, sirina_skatle, visina_skatle, spodnja_meja, zgornja_meja, korak) -> list:
     '''Sprehodi se skozi sliko v velikosti škatle (sirina_skatle x visina_skatle) in izračunaj število pikslov kože v vsaki škatli.
     Škatle se ne smejo prekrivati!
     Vrne seznam škatel, s številom pikslov kože.
-    Primer: Če je v sliki 25 škatel, kjer je v vsaki vrstici 5 škatel, naj bo seznam oblike
-      [[1,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]]. 
-      V tem primeru je v prvi škatli 1 piksel kože, v drugi 0, v tretji 0, v četrti 1 in v peti 1.'''
-    pass
+    '''
+    visina, sirina, _ = slika.shape
+    rezultati = []
+    for y in range(0, visina - visina_skatle + 1, korak):
+        for x in range(0, sirina - sirina_skatle + 1, korak):
+            podokno = slika[y:y+visina_skatle, x:x+sirina_skatle]
+            stevilo_pikslov = prestej_piklse_z_barvo_koze(podokno, spodnja_meja, zgornja_meja)
+            rezultati.append(((x, y), stevilo_pikslov))
+    return rezultati
 
-def prestej_piklse_z_barvo_koze(slika, barva_koze) -> int:
+def prestej_piklse_z_barvo_koze(slika, spodnja_meja, zgornja_meja) -> int:
     '''Prestej število pikslov z barvo kože v škatli.'''
-    pass
+    maska = cv.inRange(slika, spodnja_meja, zgornja_meja)
+    return np.sum(maska // 255)  # Število belih pikslov
 
-def doloci_barvo_koze(slika,levo_zgoraj,desno_spodaj) -> tuple:
+def doloci_barvo_koze(slika, levo_zgoraj, desno_spodaj) -> tuple:
     '''Ta funkcija se kliče zgolj 1x na prvi sliki iz kamere. 
     Vrne barvo kože v območju ki ga definira oklepajoča škatla (levo_zgoraj, desno_spodaj).
       Način izračuna je prepuščen vaši domišljiji.'''
@@ -30,7 +37,6 @@ def doloci_barvo_koze(slika,levo_zgoraj,desno_spodaj) -> tuple:
     spodnja_meja = np.reshape(spodnja_meja, (1, 3))
     zgornja_meja = np.reshape(zgornja_meja, (1, 3))
     return spodnja_meja, zgornja_meja
-
 
 if __name__ == '__main__':
     #Pripravi kamero
@@ -70,6 +76,11 @@ if __name__ == '__main__':
         #Kako velikost prebirne škatle vpliva na hitrost algoritma in točnost detekcije? Poigrajte se s parametroma velikost_skatle
         #in ne pozabite, da ni nujno da je škatla kvadratna.
 
+    #Definiraj velikost škatle
+    sirina_skatle = int(sirina_zeljene * 0.2)
+    visina_skatle = int(visina_zeljene * 0.2)
+    korak = 10
+
     #Zajemaj slike iz kamere v zanki
     while True:
         ret, frame = kamera.read()
@@ -82,6 +93,22 @@ if __name__ == '__main__':
         visina_zeljene = 300
         slika_zmanjsana = zmanjsaj_sliko(frame, sirina_zeljene, visina_zeljene)
 
+         #Obdelaj sliko s škatlami
+        rezultati = obdelaj_sliko_s_skatlami(slika_zmanjsana, sirina_skatle, visina_skatle, spodnja_meja_koze, zgornja_meja_koze, korak)
+
+        #Poišči škatlo z največ piksli kože
+        najboljsa_lokacija = None
+        najvec_pikslov = 0
+        for lokacija, stevilo_pikslov in rezultati:
+            if stevilo_pikslov > najvec_pikslov:
+                najboljsa_lokacija = lokacija
+                najvec_pikslov = stevilo_pikslov
+
+        #Izriši pravokotnik okoli najboljše lokacije
+        if najboljsa_lokacija:
+            x, y = najboljsa_lokacija
+            cv.rectangle(slika_zmanjsana, (x, y), (x + sirina_skatle, y + visina_skatle), (0, 255, 0), 2)
+
         #Prikaži sliko
         cv.imshow("Zajem Videa", slika_zmanjsana)
 
@@ -91,5 +118,4 @@ if __name__ == '__main__':
 
     #Počisti in zapri kamero
     kamera.release()
-    cv.destroyAllWindows()  
-    
+    cv.destroyAllWindows()
