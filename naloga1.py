@@ -22,7 +22,27 @@ def doloci_barvo_koze(slika,levo_zgoraj,desno_spodaj) -> tuple:
     '''Ta funkcija se kliče zgolj 1x na prvi sliki iz kamere. 
     Vrne barvo kože v območju ki ga definira oklepajoča škatla (levo_zgoraj, desno_spodaj).
       Način izračuna je prepuščen vaši domišljiji.'''
-    pass
+    x1, y1 = levo_zgoraj
+    x2, y2 = desno_spodaj
+    koza_vzorec = slika[y1:y2, x1:x2]
+    spodnja_meja = np.array(np.min(koza_vzorec, axis=(0, 1)), dtype=np.uint8)
+    zgornja_meja = np.array(np.max(koza_vzorec, axis=(0, 1)), dtype=np.uint8)
+    spodnja_meja = np.reshape(spodnja_meja, (1, 3))
+    zgornja_meja = np.reshape(zgornja_meja, (1, 3))
+    return spodnja_meja, zgornja_meja
+
+def klik_dogodek(event, x, y, flags, param):
+    global levo_zgoraj, desno_spodaj, kliknjeno
+
+    if event == cv.EVENT_LBUTTONDOWN:
+        if not kliknjeno:
+            levo_zgoraj = (x, y)
+            kliknjeno = True
+            print(f"Kliknjeno levo_zgoraj: {levo_zgoraj}")
+        else:
+            desno_spodaj = (x, y)
+            kliknjeno = False
+            print(f"Kliknjeno desno_spodaj: {desno_spodaj}")
 
 if __name__ == '__main__':
     #Pripravi kamero
@@ -30,6 +50,10 @@ if __name__ == '__main__':
     if not kamera.isOpened():
         print("Ne morem odpreti kamere")
         exit()    
+ 
+    #Definiraj območje za določanje barve kože
+    levo_zgoraj = (102, 162)
+    desno_spodaj = (118, 176)
 
     #Zajami prvo sliko iz kamere
     ret, frame = kamera.read()
@@ -44,7 +68,10 @@ if __name__ == '__main__':
     slika_zmanjsana = zmanjsaj_sliko(frame, sirina_zeljene, visina_zeljene)
 
 
+
     #Izračunamo barvo kože na prvi sliki
+    spodnja_meja_koze, zgornja_meja_koze = doloci_barvo_koze(slika_zmanjsana, levo_zgoraj, desno_spodaj)
+    print(f"Spodnja meja: {spodnja_meja_koze}, Zgornja meja: {zgornja_meja_koze}")
 
     #Zajemaj slike iz kamere in jih obdeluj     
     
