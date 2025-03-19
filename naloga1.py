@@ -3,7 +3,7 @@ import numpy as np
 
 def zmanjsaj_sliko(slika, sirina, visina):
     '''Zmanjšaj sliko na velikost sirina x visina.'''
-    pass
+    return cv.resize(slika, (sirina, visina), interpolation=cv.INTER_AREA)  
 
 def obdelaj_sliko_s_skatlami(slika, sirina_skatle, visina_skatle, barva_koze) -> list:
     '''Sprehodi se skozi sliko v velikosti škatle (sirina_skatle x visina_skatle) in izračunaj število pikslov kože v vsaki škatli.
@@ -26,8 +26,23 @@ def doloci_barvo_koze(slika,levo_zgoraj,desno_spodaj) -> tuple:
 
 if __name__ == '__main__':
     #Pripravi kamero
+    kamera = cv.VideoCapture(0)
+    if not kamera.isOpened():
+        print("Ne morem odpreti kamere")
+        exit()    
 
     #Zajami prvo sliko iz kamere
+    ret, frame = kamera.read()
+    if not ret:
+        print("Ne morem prebrati okvirja")
+        kamera.release()
+        exit()
+
+    #Pomanjšaj sliko
+    sirina_zeljene = 260
+    visina_zeljene = 300
+    slika_zmanjsana = zmanjsaj_sliko(frame, sirina_zeljene, visina_zeljene)
+
 
     #Izračunamo barvo kože na prvi sliki
 
@@ -39,4 +54,27 @@ if __name__ == '__main__':
 
         #Kako velikost prebirne škatle vpliva na hitrost algoritma in točnost detekcije? Poigrajte se s parametroma velikost_skatle
         #in ne pozabite, da ni nujno da je škatla kvadratna.
-    pass
+
+    #Zajemaj slike iz kamere v zanki
+    while True:
+        ret, frame = kamera.read()
+        if not ret:
+            print("Ne morem prebrati okvirja")
+            break
+
+        #Pomanjšaj sliko
+        sirina_zeljene = 260
+        visina_zeljene = 300
+        slika_zmanjsana = zmanjsaj_sliko(frame, sirina_zeljene, visina_zeljene)
+
+        #Prikaži sliko
+        cv.imshow("Zajem Videa", slika_zmanjsana)
+
+        #Preveri pritisk tipke 'q' za izhod
+        if cv.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    #Počisti in zapri kamero
+    kamera.release()
+    cv.destroyAllWindows()  
+    
