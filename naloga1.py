@@ -31,18 +31,6 @@ def doloci_barvo_koze(slika,levo_zgoraj,desno_spodaj) -> tuple:
     zgornja_meja = np.reshape(zgornja_meja, (1, 3))
     return spodnja_meja, zgornja_meja
 
-def klik_dogodek(event, x, y, flags, param):
-    global levo_zgoraj, desno_spodaj, kliknjeno
-
-    if event == cv.EVENT_LBUTTONDOWN:
-        if not kliknjeno:
-            levo_zgoraj = (x, y)
-            kliknjeno = True
-            print(f"Kliknjeno levo_zgoraj: {levo_zgoraj}")
-        else:
-            desno_spodaj = (x, y)
-            kliknjeno = False
-            print(f"Kliknjeno desno_spodaj: {desno_spodaj}")
 
 if __name__ == '__main__':
     #Pripravi kamero
